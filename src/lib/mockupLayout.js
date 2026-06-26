@@ -2,11 +2,11 @@
 // export renderer. Keeping them in one place guarantees the exported image is
 // identical to what is displayed in the preview.
 
-export const BRAND_LOGO_SRC = "/brand-logo.svg";
+export const BRAND_LOGO_SRC = "https://media.base44.com/images/public/6a3e7674c308d0d693b4f9ff/d3fca8942_ppv1.svg";
 
 // The brand logo's intrinsic aspect ratio (height / width).
-// brand-logo.svg is 400 x 120, so ratio = 0.3
-const BRAND_LOGO_RATIO = 120 / 400;
+// The watermark SVG is 4000 x 4000, so ratio = 1
+const BRAND_LOGO_RATIO = 4000 / 4000;
 
 // Fixed padding (in canvas pixels) between the watermark and the right/bottom
 // edges of the canvas.

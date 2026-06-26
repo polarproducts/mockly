@@ -138,10 +138,11 @@ export default function ExportModal({ garmentImage, garmentRect, logos, texts, s
 function drawBrandWatermark(ctx, canvasSize) {
   return new Promise((resolve) => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     img.onload = () => {
       const layout = computeLayout(canvasSize);
       const wm = layout.watermark;
-      ctx.globalAlpha = 1; // 100% opacity
+      ctx.globalAlpha = 1;
       ctx.drawImage(img, wm.x, wm.y, wm.w, wm.h);
       ctx.globalAlpha = 1;
       resolve();
