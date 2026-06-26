@@ -1,7 +1,8 @@
-import React from "react";
-import { Trash2, Download, RotateCw } from "lucide-react";
+import React, { useState } from "react";
+import { Trash2, Download, RotateCw, Upload } from "lucide-react";
+import TemplateSection from "@/components/editor/TemplateSection";
 
-const FONTS = [
+const BUILTIN_FONTS = [
   "Arial", "Helvetica", "Georgia", "Times New Roman", "Courier New",
   "Verdana", "Impact", "Comic Sans MS", "Trebuchet MS", "Palatino Linotype",
   "Lucida Console", "Tahoma", "Garamond",
@@ -17,9 +18,32 @@ export default function RightPanel({
   deleteText,
   onExport,
   garmentImage,
+  templates,
+  onSaveTemplate,
+  onApplyTemplate,
+  onDeleteTemplate,
 }) {
   const isLogo = selectedItem?.type === "logo";
   const isText = selectedItem?.type === "text";
+  const [customFonts, setCustomFonts] = useState([]);
+
+  const handleFontUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const buffer = await file.arrayBuffer();
+    const fontName = file.name.replace(/\.[^/.]+$/, "");
+    const fontFace = new FontFace(fontName, buffer);
+    await fontFace.load();
+    document.fonts.add(fontFace);
+    setCustomFonts((prev) => [...prev, fontName]);
+    if (isText && selectedItem) {
+      updateText(selectedItem.id, { fontFamily: fontName });
+      updateTextCommit();
+    }
+    e.target.value = "";
+  };
+
+  const allFonts = [...BUILTIN_FONTS, ...customFonts];
 
   return (
     <div className="w-64 bg-white border-l border-[#EEF0F3] flex flex-col shrink-0">
@@ -93,13 +117,19 @@ export default function RightPanel({
               </ControlGroup>
 
               <ControlGroup label="Font">
-                <select
-                  value={selectedItem.fontFamily}
-                  onChange={(e) => { updateText(selectedItem.id, { fontFamily: e.target.value }); updateTextCommit(); }}
-                  className="w-full px-3 py-1.5 text-sm border border-[#EEF0F3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#00C7D9] bg-white"
-                >
-                  {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
+                <div className="flex gap-1.5">
+                  <select
+                    value={selectedItem.fontFamily}
+                    onChange={(e) => { updateText(selectedItem.id, { fontFamily: e.target.value }); updateTextCommit(); }}
+                    className="flex-1 px-3 py-1.5 text-sm border border-[#EEF0F3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#00C7D9] bg-white"
+                  >
+                    {allFonts.map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                  <label className="p-1.5 rounded-lg bg-[#E0F7FA] text-[#00C7D9] hover:bg-[#00C7D9] hover:text-white transition-colors cursor-pointer shrink-0" title="Upload custom font">
+                    <Upload className="w-3.5 h-3.5" />
+                    <input type="file" accept=".ttf,.otf,.woff,.woff2" className="hidden" onChange={handleFontUpload} />
+                  </label>
+                </div>
               </ControlGroup>
 
               <ControlGroup label="Size">
@@ -168,6 +198,12 @@ export default function RightPanel({
           Export Mockup
         </button>
       </div>
+
+      <TemplateSection
+        templates={templates}
+        onSave={onSaveTemplate}
+        onApply={onApplyTemplate}
+        onDelete={onDeleteTemplate} />
     </div>
   );
 }

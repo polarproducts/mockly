@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Download, Loader2 } from "lucide-react";
+import { computeLayout, BRAND_LOGO_SRC } from "@/lib/mockupLayout";
 
-const EXPORT_SIZE = 1000;
-const BRAND_LOGO_SRC = "/brand-logo.svg";
+const EXPORT_SIZE = 2000;
+const PREVIEW_SIZE = 2000;
 
-export default function ExportModal({ garmentImage, logos, texts, showShadow, onClose }) {
+export default function ExportModal({ garmentImage, garmentRect, logos, texts, showShadow, onClose }) {
   const [exporting, setExporting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
 
@@ -22,22 +23,24 @@ export default function ExportModal({ garmentImage, logos, texts, showShadow, on
     canvas.width = EXPORT_SIZE;
     canvas.height = EXPORT_SIZE;
     const ctx = canvas.getContext("2d");
-    const scale = EXPORT_SIZE / 500;
+    const scale = EXPORT_SIZE / PREVIEW_SIZE;
+    const shadowScale = EXPORT_SIZE / 500;
 
     // White background
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, EXPORT_SIZE, EXPORT_SIZE);
 
-    // Draw garment
-    if (garmentImage) {
+    // Draw garment using the exact position/size from the live preview,
+    // scaled to the export resolution so the export matches the preview.
+    if (garmentImage && garmentRect) {
       const img = await loadImage(garmentImage);
-      const { dx, dy, dw, dh } = fitContain(img.width, img.height, EXPORT_SIZE, EXPORT_SIZE);
+      const s = EXPORT_SIZE / PREVIEW_SIZE;
       if (showShadow) {
         ctx.shadowColor = "rgba(0,0,0,0.15)";
-        ctx.shadowBlur = 24 * scale;
-        ctx.shadowOffsetY = 8 * scale;
+        ctx.shadowBlur = 24 * shadowScale;
+        ctx.shadowOffsetY = 8 * shadowScale;
       }
-      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.drawImage(img, garmentRect.x * s, garmentRect.y * s, garmentRect.w * s, garmentRect.h * s);
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
@@ -67,8 +70,8 @@ export default function ExportModal({ garmentImage, logos, texts, showShadow, on
       ctx.restore();
     }
 
-    // Draw hardcoded brand watermark (always injected at export)
-    await drawBrandWatermark(ctx, scale);
+    // Draw brand watermark (always injected at export, identical layout to preview)
+    await drawBrandWatermark(ctx, EXPORT_SIZE);
   };
 
   const handleExport = async (format) => {
@@ -132,17 +135,14 @@ export default function ExportModal({ garmentImage, logos, texts, showShadow, on
   );
 }
 
-function drawBrandWatermark(ctx, scale) {
+function drawBrandWatermark(ctx, canvasSize) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const maxW = 100 * scale;
-      const ratio = img.height / img.width;
-      const w = maxW;
-      const h = w * ratio;
-      const margin = 16 * scale;
-      ctx.globalAlpha = 0.5;
-      ctx.drawImage(img, EXPORT_SIZE - w - margin, EXPORT_SIZE - h - margin, w, h);
+      const layout = computeLayout(canvasSize);
+      const wm = layout.watermark;
+      ctx.globalAlpha = 1; // 100% opacity
+      ctx.drawImage(img, wm.x, wm.y, wm.w, wm.h);
       ctx.globalAlpha = 1;
       resolve();
     };
